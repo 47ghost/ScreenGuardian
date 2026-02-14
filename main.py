@@ -648,6 +648,10 @@ class SettingsWindow(QMainWindow):
         return page
     
     def _on_nav_changed(self, idx):
+        # Save monitor config when leaving monitor page (index 0)
+        if self.stacked.currentIndex() != 0:
+            self._save_monitor_config()
+            
         self.stacked.setCurrentIndex(idx)
         if idx == 1 and hasattr(self, "_logs_table"):
             self._populate_logs_table(self._logs_table)
@@ -1029,6 +1033,10 @@ class SettingsWindow(QMainWindow):
         # Row 1: Name and Path
         row1 = QHBoxLayout()
         row1.setSpacing(10)
+        
+        status_check = QCheckBox("启用")
+        status_check.setChecked(slot_data.get("status", False))
+        status_check.setFixedWidth(60)
 
         name_edit = QLineEdit()
         name_edit.setPlaceholderText("应用名称 (例如: 微信)")
@@ -1045,6 +1053,7 @@ class SettingsWindow(QMainWindow):
         browse_button.setFixedWidth(80)
         browse_button.clicked.connect(partial(self._choose_exe_path, path_edit))
         
+        row1.addWidget(status_check)
         row1.addWidget(QLabel("名称:"))
         row1.addWidget(name_edit)
         row1.addWidget(QLabel("路径:"))
@@ -1108,10 +1117,12 @@ class SettingsWindow(QMainWindow):
 
         self.app_slots.append({
             "id": slot_id,
+            "status_check": status_check,
             "name_edit": name_edit,
             "path_edit": path_edit,
             "prompt_edit": prompt_edit,
         })
+        status_check.stateChanged.connect(self._save_monitor_config)
         name_edit.textChanged.connect(partial(self._on_name_changed, slot_id))
         name_edit.textChanged.connect(self._save_monitor_config)
         path_edit.textChanged.connect(self._save_monitor_config)
@@ -1182,7 +1193,7 @@ class SettingsWindow(QMainWindow):
             name = slot["name_edit"].text().strip()
             path = slot["path_edit"].text().strip()
             prompt = slot["prompt_edit"].text().strip()
-            status = bool(name and path)
+            status = slot["status_check"].isChecked()
             apps.append({
                 "id": slot["id"],
                 "status": status,
