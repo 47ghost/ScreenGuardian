@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import time
+import shutil
 from datetime import datetime
 from functools import partial
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QEvent, QObject
@@ -937,6 +938,14 @@ class SettingsWindow(QMainWindow):
         if os.path.isfile(path):
             try:
                 os.remove(path)
+            except Exception:
+                pass
+        # Also clear all screenshots under data/screenshot
+        shots_dir = os.path.join(os.getcwd(), "data", "screenshot")
+        if os.path.isdir(shots_dir):
+            try:
+                shutil.rmtree(shots_dir, ignore_errors=True)
+                os.makedirs(shots_dir, exist_ok=True)
             except Exception:
                 pass
         if hasattr(self, "_behavior_table"):
