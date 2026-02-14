@@ -43,11 +43,16 @@ from PyQt5.QtWidgets import (
 from screen_capture import take_window_screenshot
 from ai_chat import AIChatClient
 
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
 class CaptureWorker(QThread):
     done_info = pyqtSignal(bool, str)
     def run(self):
-        cfg_path = os.path.join(os.getcwd(), "data", "config", "monitor_apps.json")
-        model_cfg_path = os.path.join(os.getcwd(), "data", "config", "model_config.json")
+        cfg_path = os.path.join(get_base_dir(), "data", "config", "monitor_apps.json")
+        model_cfg_path = os.path.join(get_base_dir(), "data", "config", "model_config.json")
         apps = []
         try:
             with open(cfg_path, "r", encoding="utf-8") as f:
@@ -61,7 +66,7 @@ class CaptureWorker(QThread):
             exe_path = a.get("exe_path", "").strip()
             date_folder = datetime.now().strftime("%Y-%m-%d")
             timestamp = str(int(time.time()))
-            base_dir = os.path.join(os.getcwd(), "data", "screenshot", app_name, date_folder)
+            base_dir = os.path.join(get_base_dir(), "data", "screenshot", app_name, date_folder)
             os.makedirs(base_dir, exist_ok=True)
             file_path = os.path.join(base_dir, f"{app_name}-{timestamp}.png")
             ok, saved_path = take_window_screenshot(exe_path, file_path)
@@ -90,7 +95,7 @@ class CaptureWorker(QThread):
                 except Exception as e:
                     print(str(e))
         if behaviors:
-            log_dir = os.path.join(os.getcwd(), "data", "log")
+            log_dir = os.path.join(get_base_dir(), "data", "log")
             os.makedirs(log_dir, exist_ok=True)
             t = datetime.now().strftime("%Y-%m-%d %H:%M")
             entries = [{"time": t, "behavior": b} for b in behaviors]
@@ -108,7 +113,7 @@ class CaptureWorker(QThread):
         warn_no_entries = False
         reply_text = ""
         try:
-            log_dir = os.path.join(os.getcwd(), "data", "log")
+            log_dir = os.path.join(get_base_dir(), "data", "log")
             bl_path = os.path.join(log_dir, "behavior-log.json")
             lines = []
             if os.path.isfile(bl_path):
@@ -152,7 +157,7 @@ class ChatWorker(QThread):
 
     def run(self):
         try:
-            model_cfg_path = os.path.join(os.getcwd(), "data", "config", "model_config.json")
+            model_cfg_path = os.path.join(get_base_dir(), "data", "config", "model_config.json")
             with open(model_cfg_path, "r", encoding="utf-8") as f:
                 mcfg = json.load(f)
             
@@ -338,7 +343,7 @@ class SettingsWindow(QMainWindow):
         self.resize(950, 600)
         
         icon_path = os.path.join(
-            os.path.dirname(__file__),
+            get_base_dir(),
             "data",
             "develop",
             "picture",
@@ -428,7 +433,7 @@ class SettingsWindow(QMainWindow):
 
         # Load current scale
         current_scale = 1.0
-        config_path = os.path.join(os.getcwd(), "data", "config", "ui_config.json")
+        config_path = os.path.join(get_base_dir(), "data", "config", "ui_config.json")
         if os.path.exists(config_path):
             try:
                 with open(config_path, "r", encoding="utf-8") as f:
@@ -516,7 +521,7 @@ class SettingsWindow(QMainWindow):
         # Load current config
         self.interval_enabled = False
         self.interval_minutes = 10
-        config_path = os.path.join(os.getcwd(), "data", "config", "interval_config.json")
+        config_path = os.path.join(get_base_dir(), "data", "config", "interval_config.json")
         if os.path.exists(config_path):
             try:
                 with open(config_path, "r", encoding="utf-8") as f:
@@ -561,7 +566,7 @@ class SettingsWindow(QMainWindow):
         enabled = self.interval_check.isChecked()
         interval = self.interval_spin.value()
         
-        config_path = os.path.join(os.getcwd(), "data", "config", "interval_config.json")
+        config_path = os.path.join(get_base_dir(), "data", "config", "interval_config.json")
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
         try:
             with open(config_path, "w", encoding="utf-8") as f:
@@ -572,7 +577,7 @@ class SettingsWindow(QMainWindow):
     def _on_scale_changed(self, value):
         scale = value / 100.0
         # Save to config
-        config_path = os.path.join(os.getcwd(), "data", "config", "ui_config.json")
+        config_path = os.path.join(get_base_dir(), "data", "config", "ui_config.json")
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
         try:
             with open(config_path, "w", encoding="utf-8") as f:
@@ -627,7 +632,7 @@ class SettingsWindow(QMainWindow):
             }
         """)
 
-        self._config_path = os.path.join(os.getcwd(), "data", "config", "monitor_apps.json")
+        self._config_path = os.path.join(get_base_dir(), "data", "config", "monitor_apps.json")
         os.makedirs(os.path.dirname(self._config_path), exist_ok=True)
         data = self._load_monitor_config()
         self.app_slots = []
@@ -659,7 +664,7 @@ class SettingsWindow(QMainWindow):
         title.setStyleSheet("font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px;")
         layout.addWidget(title)
 
-        self._model_config_path = os.path.join(os.getcwd(), "data", "config", "model_config.json")
+        self._model_config_path = os.path.join(get_base_dir(), "data", "config", "model_config.json")
         os.makedirs(os.path.dirname(self._model_config_path), exist_ok=True)
         cfg = self._load_model_config()
 
@@ -850,7 +855,7 @@ class SettingsWindow(QMainWindow):
         return page
 
     def _populate_logs_table(self, table: QTableWidget):
-        log_dir = os.path.join(os.getcwd(), "data", "log")
+        log_dir = os.path.join(get_base_dir(), "data", "log")
         entries = []
         path = os.path.join(log_dir, "logs.jsonl")
         if os.path.isfile(path):
@@ -913,7 +918,7 @@ class SettingsWindow(QMainWindow):
         return page
 
     def _populate_behavior_table(self, table: QTableWidget):
-        log_dir = os.path.join(os.getcwd(), "data", "log")
+        log_dir = os.path.join(get_base_dir(), "data", "log")
         path = os.path.join(log_dir, "behavior-log.json")
         entries = []
         if os.path.isfile(path):
@@ -933,7 +938,7 @@ class SettingsWindow(QMainWindow):
         self._behavior_table = table
 
     def _clear_behavior_logs_and_refresh(self):
-        log_dir = os.path.join(os.getcwd(), "data", "log")
+        log_dir = os.path.join(get_base_dir(), "data", "log")
         path = os.path.join(log_dir, "behavior-log.json")
         if os.path.isfile(path):
             try:
@@ -941,7 +946,7 @@ class SettingsWindow(QMainWindow):
             except Exception:
                 pass
         # Also clear all screenshots under data/screenshot
-        shots_dir = os.path.join(os.getcwd(), "data", "screenshot")
+        shots_dir = os.path.join(get_base_dir(), "data", "screenshot")
         if os.path.isdir(shots_dir):
             try:
                 shutil.rmtree(shots_dir, ignore_errors=True)
@@ -961,7 +966,7 @@ class SettingsWindow(QMainWindow):
         self._show_text_dialog(title, item.text())
 
     def _clear_logs_and_refresh(self):
-        log_dir = os.path.join(os.getcwd(), "data", "log")
+        log_dir = os.path.join(get_base_dir(), "data", "log")
         path = os.path.join(log_dir, "logs.jsonl")
         if os.path.isfile(path):
             try:
@@ -1152,7 +1157,7 @@ class SettingsWindow(QMainWindow):
         app_name = self._sanitize_name(name_edit.text())
         date_folder = datetime.now().strftime("%Y-%m-%d")
         timestamp = str(int(time.time()))
-        base_dir = os.path.join(os.getcwd(), "data", "screenshot", app_name, date_folder)
+        base_dir = os.path.join(get_base_dir(), "data", "screenshot", app_name, date_folder)
         os.makedirs(base_dir, exist_ok=True)
         file_path = os.path.join(base_dir, f"{app_name}-{timestamp}.png")
         ok, saved_path = take_window_screenshot(exe_path, file_path)
@@ -1216,7 +1221,7 @@ class PetWindow(QWidget):
         enabled = False
         interval_min = 10
         
-        config_path = os.path.join(os.getcwd(), "data", "config", "interval_config.json")
+        config_path = os.path.join(get_base_dir(), "data", "config", "interval_config.json")
         if os.path.exists(config_path):
             try:
                 with open(config_path, "r", encoding="utf-8") as f:
@@ -1238,7 +1243,7 @@ class PetWindow(QWidget):
     def _init_tray_icon(self):
         self.tray_icon = QSystemTrayIcon(self)
         image_path = os.path.join(
-            os.path.dirname(__file__),
+            get_base_dir(),
             "data",
             "develop",
             "picture",
@@ -1263,7 +1268,7 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         
         icon_path = os.path.join(
-            os.path.dirname(__file__),
+            get_base_dir(),
             "data",
             "develop",
             "picture",
@@ -1293,7 +1298,7 @@ class PetWindow(QWidget):
         # Image Label
         self.image_label = QLabel()
         image_path = os.path.join(
-            os.path.dirname(__file__),
+            get_base_dir(),
             "data",
             "develop",
             "picture",
@@ -1303,7 +1308,7 @@ class PetWindow(QWidget):
         
         # Load scale config
         self.current_scale = 1.0
-        config_path = os.path.join(os.getcwd(), "data", "config", "ui_config.json")
+        config_path = os.path.join(get_base_dir(), "data", "config", "ui_config.json")
         if os.path.exists(config_path):
             try:
                 with open(config_path, "r", encoding="utf-8") as f:

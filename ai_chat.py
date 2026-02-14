@@ -6,6 +6,13 @@ from typing import Optional
 import requests
 
 
+import sys
+
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
 class AIChatClient:
     def __init__(self, api_key: str, base_url: str, model: str, system_prompt: Optional[str] = None):
         self.api_key = api_key
@@ -57,7 +64,7 @@ class AIChatClient:
         return reply
 
     def _write_log(self, user_text: str, image_path: Optional[str], reply: str):
-        log_dir = os.path.join(os.getcwd(), "data", "log")
+        log_dir = os.path.join(get_base_dir(), "data", "log")
         os.makedirs(log_dir, exist_ok=True)
         path = os.path.join(log_dir, "logs.jsonl")
         entry = {
@@ -73,7 +80,7 @@ class AIChatClient:
 
 
 def main():
-    cfg_path = os.path.join(os.getcwd(), "data", "config", "model_config.json")
+    cfg_path = os.path.join(get_base_dir(), "data", "config", "model_config.json")
     if not os.path.isfile(cfg_path):
         raise RuntimeError("缺少模型配置文件 data/config/model_config.json")
     with open(cfg_path, "r", encoding="utf-8") as f:
