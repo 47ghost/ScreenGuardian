@@ -18,5 +18,7 @@ htmlcov/
 data/screenshot
 data/config/model_config.json
 data/config/monitor_apps.json
+data/config/interval_config.json
+data/config/ui_config.json
 data/log/logs.jsonl
 data/log/behavior-log.json
